@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ai is Ernesa</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gemini: {
+                            50: '#f0f4f9',
+                            100: '#e1e5ea',
+                            800: '#1e1f20',
+                            900: '#131314',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Typography Override for Markdown */
+        .prose pre { background-color: #1e1e1e !important; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+        .prose code { color: #ef4444; background-color: rgba(220, 220, 220, 0.2); padding: 2px 4px; border-radius: 4px; font-size: 0.9em; }
+        .dark .prose code { color: #fca5a5; background-color: rgba(255, 255, 255, 0.1); }
+        .prose pre code { color: inherit; background-color: transparent; padding: 0; }
+        
+        /* Mobile Layout Fixes */
+        body { height: 100dvh; overflow: hidden; } /* Use dynamic viewport height */
+        .main-chat-area { height: calc(100dvh - 60px); } /* adjust for bottom bar */
+        
+        /* Loading Screen */
+        #loading {
+            position: fixed; inset: 0; background: #fff; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            font-family: sans-serif; flex-direction: column; gap: 1rem;
+        }
+        .dark #loading { background: #131314; color: white; }
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #e2e8f0;
+            border-top: 4px solid #3b82f6; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gemini-50 text-gray-800 dark:bg-gemini-900 dark:text-gray-100 transition-colors duration-200">
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <div class="text-lg font-medium animate-pulse">Initializing Ai is Ernesa...</div>
+    </div>
+
+    <div class="flex h-full w-full relative">
+        
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-72 transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out bg-gray-50 dark:bg-gemini-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-xl md:shadow-none">
+            
+            <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <img src="1000080007.jpg" alt="Logo" class="w-10 h-10 rounded-full object-cover border border-gray-300 dark:border-gray-600">
+                    <span class="font-bold text-lg tracking-tight">Ai is Ernesa</span>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden p-2 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <div class="px-4 pb-2">
+                <button onclick="app.createNewChat()" class="w-full flex items-center gap-3 px-4 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-full transition-colors text-sm font-medium">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>New Chat</span>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-2 py-2 space-y-1" id="chatHistoryList">
+                </div>
+
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <button onclick="app.toggleTheme()" class="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:inline"></i>
+                    <span id="themeLabel">Dark Mode</span>
+                </button>
+                <button onclick="app.openSettings()" class="w-full flex items-center gap-3 px-4 py-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm transition-colors">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full relative w-full">
+            
+            <header class="md:hidden flex items-center justify-between p-4 bg-white dark:bg-gemini-900 border-b border-gray-200 dark:border-gray-800 z-30">
+                <button onclick="app.toggleSidebar()" class="text-gray-600 dark:text-gray-300">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+                <span class="font-semibold">Ai is Ernesa</span>
+                <div class="w-6"></div> </header>
+
+            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 md:p-8 pb-32 scroll-smooth">
+                <div id="welcomeScreen" class="h-full flex flex-col items-center justify-center text-center opacity-100 transition-opacity duration-300">
+                    <div class="relative w-24 h-24 mb-6">
+                        <img src="1000080007.jpg" class="w-full h-full object-cover rounded-full shadow-lg animate-pulse-slow">
+                        <div class="absolute inset-0 rounded-full ring-4 ring-blue-500/20 animate-ping"></div>
+                    </div>
+                    <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600 mb-4">
+                        Hello, Human.
+                    </h1>
+                    <p class="text-gray-500 dark:text-gray-400 text-lg max-w-md">
+                        How can I help you today? Ensure you have set your API key in settings.
+                    </p>
+                </div>
+
+                <div id="messagesList" class="max-w-3xl mx-auto space-y-6 hidden">
+                    </div>
+            </div>
+
+            <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gemini-900 pt-2 pb-6 px-4 md:px-0">
+                <div class="max-w-3xl mx-auto relative">
+                    <div id="streamIndicator" class="hidden absolute -top-8 left-0 text-xs text-blue-500 font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Ernesa is thinking...
+                    </div>
+
+                    <div class="bg-gray-100 dark:bg-gemini-800 rounded-3xl flex items-end p-2 border border-transparent focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all shadow-sm">
+                        <textarea 
+                            id="userInput"
+                            rows="1"
+                            placeholder="Message Ai is Ernesa..."
+                            class="w-full bg-transparent border-none focus:ring-0 resize-none py-3 px-4 max-h-32 text-gray-800 dark:text-gray-100 placeholder-gray-500"
+                            oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"></textarea>
+                        
+                        <button onclick="app.sendMessage()" id="sendBtn" class="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full mb-1 mr-1 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="text-center mt-2 text-xs text-gray-400">
+                        Ai is Ernesa can make mistakes. Verify important info.
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div id="sidebarOverlay" onclick="app.toggleSidebar()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden glass"></div>
+
+    </div>
+
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-gemini-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden transform transition-all scale-100">
+            <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 class="text-xl font-bold">Settings</h2>
+                <button onclick="app.closeSettings()" class="text-gray-500 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">OpenRouter API Key</label>
+                    <input type="password" id="apiKeyInput" placeholder="sk-or-..." class="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    <p class="text-xs text-gray-500 mt-1">Key is stored locally in your browser.</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">Model Name</label>
+                    <input type="text" id="modelInput" value="deepseek/deepseek-r1:free" class="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">System Prompt</label>
+                    <textarea id="systemPromptInput" rows="3" class="w-full p-3 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="You are a helpful AI..."></textarea>
+                </div>
+            </div>
+            <div class="p-5 bg-gray-50 dark:bg-gray-900/50 flex justify-end">
+                <button onclick="app.saveSettings()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/30">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Ai is Ernesa - Core Application Logic
+         * Handles Chat, API Streaming, UI, and Persistence
+         */
+        const app = (function() {
+            // --- State Management ---
+            const defaultState = {
+                chats: [], // Array of { id, title, messages: [], timestamp }
+                currentChatId: null,
+                settings: {
+                    apiKey: '',
+                    model: 'deepseek/deepseek-r1:free',
+                    systemPrompt: 'You are Ai is Ernesa, a helpful and intelligent AI assistant.',
+                    theme: 'light'
+                }
+            };
+
+            let state = JSON.parse(localStorage.getItem('ernesa_state')) || defaultState;
+
+            // --- DOM Elements ---
+            const els = {
+                sidebar: document.getElementById('sidebar'),
+                overlay: document.getElementById('sidebarOverlay'),
+                chatList: document.getElementById('chatHistoryList'),
+                welcome: document.getElementById('welcomeScreen'),
+                messagesList: document.getElementById('messagesList'),
+                input: document.getElementById('userInput'),
+                sendBtn: document.getElementById('sendBtn'),
+                settingsModal: document.getElementById('settingsModal'),
+                apiKey: document.getElementById('apiKeyInput'),
+                model: document.getElementById('modelInput'),
+                sysPrompt: document.getElementById('systemPromptInput'),
+                themeLabel: document.getElementById('themeLabel'),
+                streamIndicator: document.getElementById('streamIndicator'),
+                chatContainer: document.getElementById('chatContainer')
+            };
+
+            // --- Initialization ---
+            function init() {
+                // Apply theme
+                document.documentElement.className = state.settings.theme;
+                updateThemeLabel();
+
+                // Setup marked options
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        const language = highlight.getLanguage(lang) ? lang : 'plaintext';
+                        return highlight.highlight(code, { language }).value;
+                    },
+                    breaks: true
+                });
+
+                // Render Sidebar
+                renderSidebar();
+
+                // Restore last chat or show welcome
+                if (state.currentChatId && state.chats.find(c => c.id === state.currentChatId)) {
+                    loadChat(state.currentChatId);
+                } else {
+                    els.welcome.style.display = 'flex';
+                    els.messagesList.style.display = 'none';
+                }
+
+                // Add Keyboard listener
+                els.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
+
+                // Remove Loader
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                }, 800);
+            }
+
+            // --- Persistence ---
+            function saveState() {
+                localStorage.setItem('ernesa_state', JSON.stringify(state));
+            }
+
+            // --- Theme Logic ---
+            function toggleTheme() {
+                const newTheme = state.settings.theme === 'light' ? 'dark' : 'light';
+                state.settings.theme = newTheme;
+                document.documentElement.className = newTheme;
+                saveState();
+                updateThemeLabel();
+            }
+
+            function updateThemeLabel() {
+                els.themeLabel.innerText = state.settings.theme === 'light' ? 'Dark Mode' : 'Light Mode';
+            }
+
+            // --- Sidebar & Mobile Logic ---
+            function toggleSidebar() {
+                els.sidebar.classList.toggle('-translate-x-full');
+                els.overlay.classList.toggle('hidden');
+            }
+
+            // --- Settings Logic ---
+            function openSettings() {
+                els.apiKey.value = state.settings.apiKey;
+                els.model.value = state.settings.model;
+                els.sysPrompt.value = state.settings.systemPrompt;
+                els.settingsModal.classList.remove('hidden');
+            }
+
+            function closeSettings() {
+                els.settingsModal.classList.add('hidden');
+            }
+
+            function saveSettings() {
+                state.settings.apiKey = els.apiKey.value.trim();
+                state.settings.model = els.model.value.trim();
+                state.settings.systemPrompt = els.sysPrompt.value.trim();
+                saveState();
+                closeSettings();
+                // If in a chat, update the system message hidden logic if we were using it for context, 
+                // but usually system prompt is sent fresh with every request.
+            }
+
+            // --- Chat Management ---
+            function createNewChat() {
+                const newChat = {
+                    id: Date.now().toString(),
+                    title: 'New Chat',
+                    messages: [],
+                    timestamp: Date.now()
+                };
+                state.chats.unshift(newChat);
+                state.currentChatId = newChat.id;
+                saveState();
+                renderSidebar();
+                loadChat(newChat.id);
+                
+                // Close sidebar on mobile after selection
+                if(window.innerWidth < 768) toggleSidebar();
+            }
+
+            function deleteChat(e, id) {
+                e.stopPropagation(); // prevent clicking the chat itself
+                if(!confirm('Delete this chat?')) return;
+                
+                state.chats = state.chats.filter(c => c.id !== id);
+                if (state.currentChatId === id) {
+                    state.currentChatId = null;
+                    els.welcome.style.display = 'flex';
+                    els.messagesList.style.display = 'none';
+                    els.messagesList.innerHTML = '';
+                }
+                saveState();
+                renderSidebar();
+            }
+
+            function renderSidebar() {
+                els.chatList.innerHTML = '';
+                state.chats.forEach(chat => {
+                    const isActive = chat.id === state.currentChatId;
+                    const div = document.createElement('div');
+                    div.className = `group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${isActive ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'}`;
+                    div.onclick = () => loadChat(chat.id);
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <i class="fa-regular fa-message text-xs"></i>
+                            <span class="text-sm font-medium truncate">${chat.title}</span>
+                        </div>
+                        <button onclick="app.deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity p-1">
+                            <i class="fa-solid fa-trash text-xs"></i>
+                        </button>
+                    `;
+                    els.chatList.appendChild(div);
+                });
+            }
+
+            function loadChat(id) {
+                state.currentChatId = id;
+                saveState();
+                renderSidebar();
+                
+                const chat = state.chats.find(c => c.id === id);
+                if (!chat) return;
+
+                els.welcome.style.display = 'none';
+                els.messagesList.style.display = 'block';
+                els.messagesList.innerHTML = ''; // clear current view
+
+                chat.messages.forEach(msg => renderMessageUI(msg));
+                scrollToBottom();
+
+                // Close sidebar on mobile
+                if(window.innerWidth < 768) {
+                    els.sidebar.classList.add('-translate-x-full');
+                    els.overlay.classList.add('hidden');
+                }
+            }
+
+            // --- Messaging Logic ---
+            async function sendMessage() {
+                const text = els.input.value.trim();
+                if (!text) return;
+                
+                if (!state.settings.apiKey) {
+                    alert('Please enter your OpenRouter API Key in Settings.');
+                    openSettings();
+                    return;
+                }
+
+                // If no chat selected, create one
+                if (!state.currentChatId) {
+                    createNewChat();
+                }
+
+                // 1. Add User Message
+                addMessageToState('user', text);
+                renderMessageUI({ role: 'user', content: text });
+                els.input.value = '';
+                els.input.style.height = 'auto';
+                scrollToBottom();
+
+                // 2. Prepare for AI Message
+                els.sendBtn.disabled = true;
+                els.streamIndicator.classList.remove('hidden');
+                
+                // Create placeholder for AI response
+                const aiMsgId = 'msg-' + Date.now();
+                renderMessageUI({ role: 'assistant', content: '', id: aiMsgId });
+                const aiContentDiv = document.getElementById(aiMsgId).querySelector('.markdown-body');
+                
+                let fullResponse = "";
+
+                try {
+                    // 3. API Call
+                    const chat = state.chats.find(c => c.id === state.currentChatId);
+                    
+                    // Build history
+                    const messagesPayload = [
+                        { role: 'system', content: state.settings.systemPrompt },
+                        ...chat.messages.map(m => ({ role: m.role, content: m.content }))
+                    ];
+
+                    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${state.settings.apiKey}`,
+                            "Content-Type": "application/json",
+                            "HTTP-Referer": window.location.href, // OpenRouter requirement
+                            "X-Title": "Ai is Ernesa"
+                        },
+                        body: JSON.stringify({
+                            model: state.settings.model,
+                            messages: messagesPayload,
+                            stream: true
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("API Error: " + response.statusText);
+
+                    // 4. Handle Stream
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        
+                        const chunk = decoder.decode(value, { stream: true });
+                        const lines = chunk.split("\n");
+                        
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                const jsonStr = line.slice(6);
+                                if (jsonStr === "[DONE]") break;
+                                try {
+                                    const json = JSON.parse(jsonStr);
+                                    const content = json.choices[0]?.delta?.content || "";
+                                    fullResponse += content;
+                                    
+                                    // Update UI
+                                    aiContentDiv.innerHTML = DOMPurify.sanitize(marked.parse(fullResponse));
+                                    
+                                    // Syntax highlight live
+                                    aiContentDiv.querySelectorAll('pre code').forEach((block) => {
+                                        hljs.highlightElement(block);
+                                    });
+
+                                    scrollToBottom();
+                                } catch (e) {
+                                    console.error("Parse Error", e);
+                                }
+                            }
+                        }
+                    }
+
+                    // 5. Finalize
+                    addMessageToState('assistant', fullResponse);
+                    
+                    // Auto-generate title if it's the first exchange and title is "New Chat"
+                    if (chat.messages.length <= 2 && chat.title === 'New Chat') {
+                        generateTitle(text);
+                    }
+
+                } catch (error) {
+                    aiContentDiv.innerHTML = `<span class="text-red-500">Error: ${error.message}</span>`;
+                    addMessageToState('assistant', `Error: ${error.message}`);
+                } finally {
+                    els.sendBtn.disabled = false;
+                    els.streamIndicator.classList.add('hidden');
+                    saveState();
+                }
+            }
+
+            function addMessageToState(role, content) {
+                const chat = state.chats.find(c => c.id === state.currentChatId);
+                if (chat) {
+                    chat.messages.push({ role, content });
+                    saveState();
+                }
+            }
+
+            function renderMessageUI(msg) {
+                const isUser = msg.role === 'user';
+                const div = document.createElement('div');
+                div.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`;
+                if (msg.id) div.id = msg.id;
+
+                const avatar = isUser 
+                    ? `<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs"><i class="fa-solid fa-user"></i></div>`
+                    : `<img src="1000080007.jpg" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-600">`;
+
+                // Safe HTML rendering
+                const contentHtml = DOMPurify.sanitize(marked.parse(msg.content));
+
+                div.innerHTML = `
+                    <div class="flex max-w-[85%] md:max-w-[75%] gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}">
+                        <div class="flex-shrink-0 mt-1">${avatar}</div>
+                        <div class="flex flex-col">
+                            <div class="prose dark:prose-invert max-w-none text-sm md:text-base leading-relaxed markdown-body ${isUser ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 px-4 py-2 rounded-2xl rounded-tr-none' : 'text-gray-800 dark:text-gray-100'}">
+                                ${contentHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Highlight code blocks immediately after render
+                div.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+
+                els.messagesList.appendChild(div);
+            }
+
+            function scrollToBottom() {
+                // Determine if user was already at bottom to prevent annoying jumps during reading?
+                // For now, simple scroll
+                els.chatContainer.scrollTop = els.chatContainer.scrollHeight;
+            }
+
+            // Simple title generator (Client-side heuristic or could be API call, keeping it simple for zero-build constraints to save tokens)
+            function generateTitle(firstUserMsg) {
+                const chat = state.chats.find(c => c.id === state.currentChatId);
+                if(!chat) return;
+                
+                let title = firstUserMsg.slice(0, 30);
+                if (firstUserMsg.length > 30) title += "...";
+                
+                chat.title = title;
+                saveState();
+                renderSidebar();
+            }
+
+            // Expose public methods
+            return {
+                init,
+                createNewChat,
+                loadChat,
+                deleteChat,
+                sendMessage,
+                toggleTheme,
+                toggleSidebar,
+                openSettings,
+                closeSettings,
+                saveSettings
+            };
+        })();
+
+        // Start App
+        document.addEventListener('DOMContentLoaded', app.init);
+    </script>
+</body>
+</html>
